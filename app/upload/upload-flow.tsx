@@ -27,13 +27,22 @@ export default function UploadFlow({ creditBalance }: Props) {
   const [fileError, setFileError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
+  const [liveBalance, setLiveBalance] = useState<number | null>(null)
   const inputRef = useRef<HTMLInputElement>(null)
 
   const totalCredits = OUTCOMES
     .filter((o) => selectedOutcomes.includes(o.id))
     .reduce((sum, o) => sum + o.credits, 0)
 
-  const canAfford = creditBalance >= totalCredits
+  const effectiveBalance = liveBalance ?? creditBalance
+  const canAfford = effectiveBalance >= totalCredits
+
+  async function goToConfirm() {
+    const res = await fetch('/api/credits')
+    const { balance } = await res.json()
+    setLiveBalance(balance)
+    setStep('confirm')
+  }
   const requiredConcepts = getRequiredConcepts(selectedOutcomes)
 
   function toggleOutcome(id: string) {
@@ -295,7 +304,7 @@ export default function UploadFlow({ creditBalance }: Props) {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setStep('confirm')}
+            onClick={goToConfirm}
             disabled={!allMapped}
             className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-40 transition-colors"
           >
