@@ -1,27 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { useTransition } from 'react'
 import { CREDIT_PACKAGES, type CreditPackage } from '@/lib/packages'
+import { createCheckoutSession } from './actions'
 
 export default function BuyPage() {
-  const [loading, setLoading] = useState<string | null>(null)
+  const [pending, startTransition] = useTransition()
 
-  async function handleBuy(pkg: CreditPackage) {
-    setLoading(pkg.id)
-
-    const res = await fetch('/api/checkout', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ packageId: pkg.id }),
+  function handleBuy(pkg: CreditPackage) {
+    startTransition(async () => {
+      await createCheckoutSession(pkg.id)
     })
-
-    if (!res.ok) {
-      setLoading(null)
-      return
-    }
-
-    const { url } = await res.json()
-    window.location.href = url
   }
 
   return (
@@ -49,10 +38,10 @@ export default function BuyPage() {
 
             <button
               onClick={() => handleBuy(pkg)}
-              disabled={loading !== null}
+              disabled={pending}
               className="w-full bg-gray-900 text-white py-2 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
             >
-              {loading === pkg.id ? 'Redirecting…' : 'Buy'}
+              {pending ? 'Redirecting…' : 'Buy'}
             </button>
           </div>
         ))}
