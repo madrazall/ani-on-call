@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { CREDIT_PACKAGES, type CreditPackage } from '@/lib/stripe'
+import { CREDIT_PACKAGES, type CreditPackage } from '@/lib/packages'
 
 export default function BuyPage() {
   const [loading, setLoading] = useState<string | null>(null)
