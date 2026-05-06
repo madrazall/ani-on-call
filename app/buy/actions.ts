@@ -44,6 +44,7 @@ export async function createCheckoutSession(packageId: string) {
     success_url: `${appUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
     cancel_url: `${appUrl}/checkout/cancel`,
     customer_email: user.email,
+    allow_promotion_codes: true,
   })
 
   redirect(session.url!)
