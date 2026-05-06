@@ -5,6 +5,7 @@ create table public.reports (
   outcome_ids text[] not null,
   vendor text not null default 'unknown',
   status text not null default 'pending' check (status in ('pending', 'running', 'complete', 'failed')),
+  column_map jsonb,
   result_json jsonb,
   credits_used integer not null,
   refund_requested boolean not null default false,

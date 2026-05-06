@@ -2,11 +2,17 @@
 
 import { useState, useRef, useCallback } from 'react'
 import * as XLSX from 'xlsx'
-import { detectVendor, type DetectedVendor } from '@/lib/vendors'
+import {
+  detectColumns,
+  getRequiredConcepts,
+  CONCEPTS,
+  type ConceptId,
+  type ColumnMap,
+} from '@/lib/column-detection'
 import { OUTCOMES, type Outcome } from '@/lib/outcomes'
 import Link from 'next/link'
 
-type Step = 'upload' | 'review' | 'select' | 'confirm' | 'submitting'
+type Step = 'upload' | 'select' | 'map' | 'confirm' | 'submitting'
 
 interface Props {
   creditBalance: number
@@ -16,8 +22,8 @@ export default function UploadFlow({ creditBalance }: Props) {
   const [step, setStep] = useState<Step>('upload')
   const [file, setFile] = useState<File | null>(null)
   const [headers, setHeaders] = useState<string[]>([])
-  const [vendor, setVendor] = useState<DetectedVendor | null>(null)
   const [selectedOutcomes, setSelectedOutcomes] = useState<string[]>([])
+  const [columnMap, setColumnMap] = useState<ColumnMap>({})
   const [error, setError] = useState<string | null>(null)
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -31,14 +37,8 @@ export default function UploadFlow({ creditBalance }: Props) {
   async function processFile(f: File) {
     setError(null)
 
-    const allowed = [
-      'text/csv',
-      'application/vnd.ms-excel',
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    ]
-
-    if (!allowed.includes(f.type) && !f.name.match(/\.(csv|xls|xlsx)$/i)) {
-      setError('Please upload a CSV or Excel file.')
+    if (!f.name.match(/\.(csv|xls|xlsx)$/i)) {
+      setError('Please upload a CSV or Excel file (.csv, .xls, .xlsx).')
       return
     }
 
@@ -62,8 +62,7 @@ export default function UploadFlow({ creditBalance }: Props) {
 
       setFile(f)
       setHeaders(fileHeaders)
-      setVendor(detectVendor(fileHeaders))
-      setStep('review')
+      setStep('select')
     } catch {
       setError('We had trouble reading that file. Try saving it as CSV and uploading again.')
     }
@@ -76,9 +75,16 @@ export default function UploadFlow({ creditBalance }: Props) {
     if (f) await processFile(f)
   }, [])
 
-  const onFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const f = e.target.files?.[0]
-    if (f) await processFile(f)
+  function goToMap() {
+    // Auto-detect columns and pre-fill the map
+    const detected = detectColumns(headers)
+    const required = getRequiredConcepts(selectedOutcomes)
+    const initial: ColumnMap = {}
+    for (const concept of required) {
+      initial[concept] = detected[concept]?.column ?? ''
+    }
+    setColumnMap(initial)
+    setStep('map')
   }
 
   function toggleOutcome(id: string) {
@@ -93,8 +99,8 @@ export default function UploadFlow({ creditBalance }: Props) {
 
     const formData = new FormData()
     formData.append('file', file)
-    formData.append('vendor', vendor?.id ?? 'unknown')
     selectedOutcomes.forEach((id) => formData.append('outcomeIds', id))
+    formData.append('columnMap', JSON.stringify(columnMap))
 
     const res = await fetch('/api/analyze', {
       method: 'POST',
@@ -118,7 +124,8 @@ export default function UploadFlow({ creditBalance }: Props) {
       <div>
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">Upload your export</h1>
         <p className="text-sm text-gray-500 mb-8">
-          CSV or Excel. Works with ShipStation, Shopify, Pirateship, EasyPost, Shippo, and WooCommerce.
+          CSV or Excel. Works with any shipping platform — ShipStation, Shopify, Pirateship,
+          Magento, and more.
         </p>
 
         <div
@@ -131,66 +138,20 @@ export default function UploadFlow({ creditBalance }: Props) {
           }`}
         >
           <p className="text-sm font-medium text-gray-700 mb-1">Drop your file here</p>
-          <p className="text-xs text-gray-400">or click to browse</p>
+          <p className="text-xs text-gray-400">or click to browse — CSV or Excel</p>
           <input
             ref={inputRef}
             type="file"
             accept=".csv,.xls,.xlsx"
             className="hidden"
-            onChange={onFileChange}
+            onChange={async (e) => {
+              const f = e.target.files?.[0]
+              if (f) await processFile(f)
+            }}
           />
         </div>
 
         {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
-      </div>
-    )
-  }
-
-  // ── Step: Review ────────────────────────────────────────────────
-  if (step === 'review') {
-    return (
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900 mb-6">Looks like your file</h1>
-
-        <div className="border border-gray-200 rounded-xl p-5 mb-6 space-y-3">
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">File</span>
-            <span className="text-gray-900 font-medium">{file?.name}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Columns found</span>
-            <span className="text-gray-900 font-medium">{headers.length}</span>
-          </div>
-          <div className="flex justify-between text-sm">
-            <span className="text-gray-500">Detected format</span>
-            <span className={`font-medium ${vendor ? 'text-gray-900' : 'text-amber-600'}`}>
-              {vendor ? vendor.name : 'Unknown'}
-            </span>
-          </div>
-        </div>
-
-        {!vendor && (
-          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-sm text-amber-800">
-            We couldn&apos;t identify your file format. You can still continue, but accuracy
-            may be lower. Credits won&apos;t be refunded if the report doesn&apos;t produce
-            usable results.
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <button
-            onClick={() => setStep('select')}
-            className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 transition-colors"
-          >
-            Continue
-          </button>
-          <button
-            onClick={() => { setFile(null); setVendor(null); setHeaders([]); setStep('upload') }}
-            className="text-gray-500 px-5 py-2 rounded-lg text-sm hover:text-gray-900 transition-colors"
-          >
-            Upload a different file
-          </button>
-        </div>
       </div>
     )
   }
@@ -200,10 +161,12 @@ export default function UploadFlow({ creditBalance }: Props) {
     return (
       <div>
         <h1 className="text-2xl font-semibold text-gray-900 mb-2">What do you want to know?</h1>
-        <p className="text-sm text-gray-500 mb-8">Pick one or more. Credits are only deducted when you confirm.</p>
+        <p className="text-sm text-gray-500 mb-8">
+          Pick one or more. Credits are only deducted when you confirm.
+        </p>
 
         <div className="space-y-3 mb-8">
-          {OUTCOMES.map((outcome) => {
+          {OUTCOMES.map((outcome: Outcome) => {
             const selected = selectedOutcomes.includes(outcome.id)
             return (
               <button
@@ -231,14 +194,80 @@ export default function UploadFlow({ creditBalance }: Props) {
 
         <div className="flex items-center gap-3">
           <button
-            onClick={() => setStep('confirm')}
+            onClick={goToMap}
             disabled={selectedOutcomes.length === 0}
             className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-40 transition-colors"
           >
-            Review ({totalCredits} {totalCredits === 1 ? 'credit' : 'credits'})
+            Continue
           </button>
           <button
-            onClick={() => setStep('review')}
+            onClick={() => { setFile(null); setHeaders([]); setSelectedOutcomes([]); setStep('upload') }}
+            className="text-gray-500 px-5 py-2 rounded-lg text-sm hover:text-gray-900 transition-colors"
+          >
+            Back
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  // ── Step: Column mapping ────────────────────────────────────────
+  if (step === 'map') {
+    const required = getRequiredConcepts(selectedOutcomes)
+    const allMapped = required.every((c) => columnMap[c])
+
+    return (
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900 mb-2">Match your columns</h1>
+        <p className="text-sm text-gray-500 mb-8">
+          We pre-filled what we could. Check that everything looks right — these are the
+          columns we&apos;ll use to run your analysis.
+        </p>
+
+        <div className="space-y-4 mb-8">
+          {required.map((conceptId) => {
+            const concept = CONCEPTS[conceptId]
+            const value = columnMap[conceptId] ?? ''
+
+            return (
+              <div key={conceptId}>
+                <div className="flex justify-between items-baseline mb-1">
+                  <label className="text-sm font-medium text-gray-900">
+                    {concept.label}
+                  </label>
+                  <span className="text-xs text-gray-400">{concept.description}</span>
+                </div>
+                <select
+                  value={value}
+                  onChange={(e) =>
+                    setColumnMap((prev) => ({ ...prev, [conceptId]: e.target.value }))
+                  }
+                  className={`w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 ${
+                    value ? 'border-gray-300 text-gray-900' : 'border-amber-300 text-gray-400'
+                  }`}
+                >
+                  <option value="">— select a column —</option>
+                  {headers.map((h) => (
+                    <option key={h} value={h}>
+                      {h}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )
+          })}
+        </div>
+
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => setStep('confirm')}
+            disabled={!allMapped}
+            className="bg-gray-900 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-gray-700 disabled:opacity-40 transition-colors"
+          >
+            Looks right
+          </button>
+          <button
+            onClick={() => setStep('select')}
             className="text-gray-500 px-5 py-2 rounded-lg text-sm hover:text-gray-900 transition-colors"
           >
             Back
@@ -259,12 +288,16 @@ export default function UploadFlow({ creditBalance }: Props) {
           {chosen.map((o) => (
             <div key={o.id} className="flex justify-between text-sm">
               <span className="text-gray-700">{o.name}</span>
-              <span className="text-gray-500">{o.credits} {o.credits === 1 ? 'credit' : 'credits'}</span>
+              <span className="text-gray-500">
+                {o.credits} {o.credits === 1 ? 'credit' : 'credits'}
+              </span>
             </div>
           ))}
           <div className="border-t border-gray-100 pt-2 mt-2 flex justify-between text-sm font-medium">
             <span className="text-gray-900">Total</span>
-            <span className="text-gray-900">{totalCredits} {totalCredits === 1 ? 'credit' : 'credits'}</span>
+            <span className="text-gray-900">
+              {totalCredits} {totalCredits === 1 ? 'credit' : 'credits'}
+            </span>
           </div>
         </div>
 
@@ -287,7 +320,7 @@ export default function UploadFlow({ creditBalance }: Props) {
             </Link>
           )}
           <button
-            onClick={() => setStep('select')}
+            onClick={() => setStep('map')}
             className="text-gray-500 px-5 py-2 rounded-lg text-sm hover:text-gray-900 transition-colors"
           >
             Back

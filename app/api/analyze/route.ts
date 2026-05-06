@@ -20,10 +20,17 @@ export async function POST(request: Request) {
 
   const formData = await request.formData()
   const outcomeIds = formData.getAll('outcomeIds') as string[]
-  const vendor = (formData.get('vendor') as string) || 'unknown'
+  const columnMapRaw = (formData.get('columnMap') as string) || '{}'
 
   if (outcomeIds.length === 0) {
     return NextResponse.json({ error: 'No outcomes selected.' }, { status: 400 })
+  }
+
+  let columnMap: Record<string, string>
+  try {
+    columnMap = JSON.parse(columnMapRaw)
+  } catch {
+    return NextResponse.json({ error: 'Invalid column mapping.' }, { status: 400 })
   }
 
   const selectedOutcomes = OUTCOMES.filter((o) => outcomeIds.includes(o.id))
@@ -54,7 +61,8 @@ export async function POST(request: Request) {
     .insert({
       user_id: user.id,
       outcome_ids: outcomeIds,
-      vendor,
+      vendor: 'unknown',
+      column_map: columnMap,
       credits_used: totalCredits,
       status: 'pending',
     })
