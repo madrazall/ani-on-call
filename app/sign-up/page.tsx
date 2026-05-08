@@ -1,10 +1,11 @@
 'use client'
 
+import { Suspense } from 'react'
 import { useState } from 'react'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
-export default function SignUpPage() {
+function SignUpForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -34,11 +35,16 @@ export default function SignUpPage() {
 
   if (done) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+      <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <h1 className="text-2xl font-semibold text-gray-900 mb-3">Check your email</h1>
-          <p className="text-sm text-gray-500">
-            We sent a confirmation link to <span className="font-medium text-gray-700">{email}</span>.
+          <div className="w-12 h-12 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
+            <svg className="w-6 h-6 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-semibold text-foreground mb-3">Check your email</h1>
+          <p className="text-sm text-muted-foreground">
+            We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>.
             Click it to finish signing up.
           </p>
         </div>
@@ -47,19 +53,21 @@ export default function SignUpPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
+    <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-semibold text-gray-900 mb-1">Create an account</h1>
-        <p className="text-sm text-gray-500 mb-8">
-          Already have one?{' '}
-          <Link href="/sign-in" className="text-gray-900 underline underline-offset-2">
-            Sign in
-          </Link>
-        </p>
+        <div className="mb-8">
+          <h1 className="text-2xl font-semibold text-foreground mb-1">Create an account</h1>
+          <p className="text-sm text-muted-foreground">
+            Already have one?{' '}
+            <Link href="/sign-in" className="text-foreground underline underline-offset-2 hover:no-underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="email" className="block text-sm font-medium text-foreground mb-1.5">
               Email
             </label>
             <input
@@ -68,12 +76,13 @@ export default function SignUpPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="w-full px-3 py-2.5 border border-input rounded-lg text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
+              placeholder="you@example.com"
             />
           </div>
 
           <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="password" className="block text-sm font-medium text-foreground mb-1.5">
               Password
             </label>
             <input
@@ -83,24 +92,32 @@ export default function SignUpPage() {
               minLength={8}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-gray-900"
+              className="w-full px-3 py-2.5 border border-input rounded-lg text-sm bg-card focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring transition-colors"
             />
-            <p className="text-xs text-gray-400 mt-1">At least 8 characters</p>
+            <p className="text-xs text-muted-foreground mt-1.5">At least 8 characters</p>
           </div>
 
           {error && (
-            <p className="text-sm text-red-600">{error}</p>
+            <p className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">{error}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gray-900 text-white py-2 rounded-md text-sm font-medium hover:bg-gray-700 disabled:opacity-50 transition-colors"
+            className="w-full bg-primary text-primary-foreground py-2.5 rounded-lg text-sm font-medium hover:opacity-90 disabled:opacity-50 transition-opacity"
           >
             {loading ? 'Creating account…' : 'Create account'}
           </button>
         </form>
       </div>
     </div>
+  )
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense>
+      <SignUpForm />
+    </Suspense>
   )
 }
