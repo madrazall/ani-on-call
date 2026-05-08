@@ -9,7 +9,7 @@ const geist = Geist({
 });
 
 export const metadata: Metadata = {
-  title: "SHIT — Shipping analysis for small sellers",
+  title: "Ani On Call — Shipping analysis for small sellers",
   description: "Like having a numbers person in your contacts.",
 };
 
@@ -20,7 +20,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${geist.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col bg-gray-50 font-sans">
+      <body className="min-h-full flex flex-col bg-background font-sans">
         <Nav />
         <main className="flex-1">{children}</main>
       </body>
