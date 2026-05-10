@@ -1,26 +1,62 @@
 @import "tailwindcss";
 
+/* ── Ani On Call brand tokens ─────────────────────────────────────── */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ani-bg:          #1A1714;
+  --ani-surface:     #242019;
+  --ani-surface2:    #2E2822;
+  --ani-copper:      #B76E79;
+  --ani-copper-dim:  #B76E7918;
+  --ani-copper-mid:  #B76E7950;
+  --ani-white:       #F5F0EB;
+  --ani-muted:       #8C847E;
+  --ani-border:      #3A3330;
+  --ani-rust:        #6B3F3A;
+  --ani-green:       #4ADE80;
+  --ani-green-dim:   #1A3A2A;
+  --ani-red:         #F87171;
+  --ani-red-dim:     #3A1A1A;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  /* Semantic color mappings — existing Tailwind utility classes pick these up */
+  --color-background:             var(--ani-bg);
+  --color-foreground:             var(--ani-white);
+  --color-card:                   var(--ani-surface);
+  --color-card-foreground:        var(--ani-white);
+  --color-primary:                var(--ani-copper);
+  --color-primary-foreground:     var(--ani-white);
+  --color-secondary:              var(--ani-surface2);
+  --color-secondary-foreground:   var(--ani-muted);
+  --color-muted:                  var(--ani-surface2);
+  --color-muted-foreground:       var(--ani-muted);
+  --color-border:                 var(--ani-border);
+  --color-ring:                   var(--ani-copper);
+  --color-input:                  var(--ani-surface2);
+  --color-destructive:            var(--ani-red);
+  --color-destructive-foreground: var(--ani-white);
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  /* Named brand tokens available as bg-ani-copper, text-ani-muted, etc. */
+  --color-ani-copper:     var(--ani-copper);
+  --color-ani-copper-dim: var(--ani-copper-dim);
+  --color-ani-copper-mid: var(--ani-copper-mid);
+  --color-ani-surface:    var(--ani-surface);
+  --color-ani-surface2:   var(--ani-surface2);
+  --color-ani-muted:      var(--ani-muted);
+  --color-ani-border:     var(--ani-border);
+  --color-ani-rust:       var(--ani-rust);
+  --color-ani-green:      var(--ani-green);
+  --color-ani-green-dim:  var(--ani-green-dim);
+  --color-ani-red:        var(--ani-red);
+  --color-ani-red-dim:    var(--ani-red-dim);
+  --color-ani-white:      var(--ani-white);
+
+  /* Typography */
+  --font-sans: var(--font-dm-sans);
+  --font-mono: var(--font-display-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ani-bg);
+  color: var(--ani-white);
 }

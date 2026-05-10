@@ -1,36 +1,61 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SHIT — UI Redesign
 
-## Getting Started
+Complete visual overhaul for your shipping analysis app. Same functionality, much better feel.
 
-First, run the development server:
+## What's changed
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Visual system
+- **Warm cream background** (`#faf9f7`) instead of cold gray — feels human, not corporate
+- **Warm charcoal text** (`#1c1917`) — easier on the eyes than pure black
+- **Subtle card-based layout** with soft borders — content breathes better
+- **Improved spacing and typography hierarchy** — Geist font stays, but used better
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Pages redesigned
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Page | What's new |
+|------|-----------|
+| **Homepage** (`app/page.tsx`) | Stats grid, clearer CTA hierarchy, warmer feel |
+| **Sign up** (`app/sign-up/page.tsx`) | Cleaner layout, email icon confirmation state, friendlier error styling |
+| **Sign in** (`app/sign-in/page.tsx`) | Matching layout, redirects to `/upload` on success |
+| **Buy credits** (`app/buy/page.tsx`) | Card-based pricing with "Best value" badge, feature lists, clearer value prop |
+| **Upload + analyze** (`app/upload/page.tsx`) | **New 2-step flow**: 1) Pick outcome, 2) Upload file. Progress bar, drag-and-drop zone, clear states |
+| **Navigation** (`components/nav.tsx`) | Cleaner auth states, pill-style buttons, sticky header |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### New files
+- `lib/packages.ts` — Credit package data (Starter/Standard/Pro)
+- `lib/outcomes.ts` — Your existing analysis types (moved from `app/outcomes.ts` for consistency)
+- `app/buy/actions.ts` — Stripe checkout server action
+- `app/sign-in/page.tsx` — New login page
 
-## Learn More
+## How to apply
 
-To learn more about Next.js, take a look at the following resources:
+1. **Back up your current files**
+2. **Replace these files** in your project:
+   - `app/globals.css`
+   - `app/layout.tsx`
+   - `app/page.tsx`
+   - `app/sign-up/page.tsx`
+   - `app/sign-in/page.tsx` (new)
+   - `app/buy/page.tsx` (new)
+   - `app/buy/actions.ts` (new — or keep your existing `actions.ts`)
+   - `app/upload/page.tsx` (new)
+   - `components/nav.tsx`
+   - `lib/packages.ts` (new)
+   - `lib/outcomes.ts` (move from `app/outcomes.ts` if you had it there)
+3. **Update imports** if your `outcomes.ts` was in a different location
+4. **Add your analysis API call** in `app/upload/page.tsx` where the `// TODO: call your analysis API` comment is
+5. **Wire up results page** — the upload page currently has a commented-out redirect to `/results`
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## What you still need to build
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- **Results page** (`app/results/page.tsx`) — where users see their plain-English analysis output
+- **Checkout success/cancel pages** if you don't have them
+- Your actual analysis API integration in the upload page
 
-## Deploy on Vercel
+## Key design decisions
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **No shadcn/ui** — kept it lightweight with Tailwind + custom CSS variables
+- **CSS variables** in `globals.css` make it easy to tweak colors globally
+- **2-step upload flow** reduces overwhelm — pick what you want first, then give us the file
+- **Progress bar** gives users a sense of where they are in the process
+- **Friendly microcopy preserved** — "Either way, now you know" and similar tone stays intact

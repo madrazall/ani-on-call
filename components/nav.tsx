@@ -24,7 +24,7 @@ export default async function Nav() {
       <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
         <Link
           href="/"
-          className="text-sm font-semibold tracking-tight text-foreground hover:opacity-80 transition-opacity"
+          className="font-mono text-sm font-bold tracking-tight text-ani-white hover:opacity-80 transition-opacity"
         >
           Ani On Call
         </Link>
@@ -32,7 +32,7 @@ export default async function Nav() {
         <div className="flex items-center gap-1">
           {user ? (
             <>
-              <span className="text-sm text-muted-foreground hidden sm:inline mr-2">
+              <span className="text-sm font-mono text-ani-copper hidden sm:inline mr-2">
                 {balance} {balance === 1 ? "credit" : "credits"}
               </span>
               <Link

@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as adminClient } from '@supabase/supabase-js'
+import * as XLSX from 'xlsx'
 import { OUTCOMES } from '@/lib/outcomes'
+import { runAnalysis, extractRows } from '@/lib/analyzers'
 
 function admin() {
   return adminClient(
@@ -19,6 +21,7 @@ export async function POST(request: Request) {
   }
 
   const formData = await request.formData()
+  const file = formData.get('file') as File | null
   const outcomeIds = formData.getAll('outcomeIds') as string[]
   const columnMapRaw = (formData.get('columnMap') as string) || '{}'
 
@@ -48,21 +51,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Not enough credits.' }, { status: 402 })
   }
 
-  // Log the transaction
   await db.from('credit_transactions').insert({
     user_id: user.id,
     amount: -totalCredits,
     reason: `analysis:${outcomeIds.join(',')}`,
   })
 
-  // Create report record — analysis runs in Phase 3
+  // Create report row
   const { data: report, error: reportError } = await db
     .from('reports')
     .insert({
       user_id: user.id,
       outcome_ids: outcomeIds,
       vendor: 'unknown',
-      column_map: columnMap,
       credits_used: totalCredits,
       status: 'pending',
     })
@@ -71,6 +72,29 @@ export async function POST(request: Request) {
 
   if (reportError || !report) {
     return NextResponse.json({ error: 'Failed to create report.' }, { status: 500 })
+  }
+
+  // Run analysis synchronously
+  try {
+    if (!file) throw new Error('No file provided')
+
+    const buffer = await file.arrayBuffer()
+    const workbook = XLSX.read(buffer, { type: 'array' })
+    const sheet = workbook.Sheets[workbook.SheetNames[0]]
+    const rawRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 })
+    const rows = extractRows(rawRows, columnMap)
+    const results = outcomeIds.map(id => runAnalysis(id, rows))
+
+    await db
+      .from('reports')
+      .update({ result_json: results, status: 'complete' })
+      .eq('id', report.id)
+  } catch (err) {
+    console.error('Analysis failed:', err)
+    await db
+      .from('reports')
+      .update({ status: 'error' })
+      .eq('id', report.id)
   }
 
   return NextResponse.json({ reportId: report.id })

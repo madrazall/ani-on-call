@@ -28,7 +28,7 @@ export default function BuyButtons({ packages, action }: Props) {
             <p className="text-xs font-medium text-gray-400 uppercase tracking-wide mb-1">
               {pkg.name}
             </p>
-            <p className="text-3xl font-bold text-gray-900">{pkg.displayPrice}</p>
+            <p className="text-3xl font-bold text-gray-900">${(pkg.price / 100).toFixed(0)}</p>
             <p className="text-sm text-gray-500 mt-1">{pkg.credits} credits</p>
           </div>
 

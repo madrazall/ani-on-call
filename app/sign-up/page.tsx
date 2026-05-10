@@ -37,14 +37,14 @@ function SignUpForm() {
     return (
       <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm text-center">
-          <div className="w-12 h-12 rounded-full bg-secondary mx-auto mb-4 flex items-center justify-center">
-            <svg className="w-6 h-6 text-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <div className="w-12 h-12 rounded-full bg-ani-surface border border-ani-border mx-auto mb-4 flex items-center justify-center">
+            <svg className="w-6 h-6 text-ani-copper" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
               <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
             </svg>
           </div>
-          <h1 className="text-2xl font-semibold text-foreground mb-3">Check your email</h1>
-          <p className="text-sm text-muted-foreground">
-            We sent a confirmation link to <span className="font-medium text-foreground">{email}</span>.
+          <h1 className="font-mono text-2xl font-bold text-ani-white mb-3">Check your email</h1>
+          <p className="text-sm text-ani-muted">
+            We sent a confirmation link to <span className="font-medium text-ani-white">{email}</span>.
             Click it to finish signing up.
           </p>
         </div>
@@ -56,10 +56,10 @@ function SignUpForm() {
     <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-foreground mb-1">Create an account</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="font-mono text-2xl font-bold text-ani-white mb-1">Create an account</h1>
+          <p className="text-sm text-ani-muted">
             Already have one?{' '}
-            <Link href="/sign-in" className="text-foreground underline underline-offset-2 hover:no-underline">
+            <Link href="/sign-in" className="text-ani-copper hover:opacity-80 transition-opacity">
               Sign in
             </Link>
           </p>

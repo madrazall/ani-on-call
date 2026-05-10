@@ -36,10 +36,10 @@ function SignInForm() {
     <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <div className="mb-8">
-          <h1 className="text-2xl font-semibold text-foreground mb-1">Welcome back</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="font-mono text-2xl font-bold text-ani-white mb-1">Welcome back</h1>
+          <p className="text-sm text-ani-muted">
             Don&apos;t have an account?{' '}
-            <Link href="/sign-up" className="text-foreground underline underline-offset-2 hover:no-underline">
+            <Link href="/sign-up" className="text-ani-copper hover:opacity-80 transition-opacity">
               Sign up
             </Link>
           </p>
