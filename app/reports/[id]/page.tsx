@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { OUTCOMES } from '@/lib/outcomes'
 import type { AnalysisResult } from '@/lib/analyzers'
 import Link from 'next/link'
+import DownloadButton from './download-button'
 
 export default async function ReportPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -103,13 +104,19 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         })}
       </div>
 
-      <div className="mt-10 pt-8 border-t border-ani-border">
+      <div className="mt-10 pt-8 border-t border-ani-border flex items-center justify-between">
         <Link
           href="/upload"
           className="text-sm text-ani-copper hover:opacity-80 transition-opacity"
         >
           Run another analysis →
         </Link>
+        <DownloadButton
+          results={results}
+          outcomes={outcomes}
+          reportId={id}
+          createdAt={report.created_at}
+        />
       </div>
     </div>
   )
