@@ -25,37 +25,37 @@ export const CONCEPTS: Record<ConceptId, Concept> = {
   carrier: {
     id: 'carrier',
     label: 'Carrier',
-    description: 'The shipping carrier — UPS, FedEx, USPS, etc.',
+    description: 'Which column names the shipping carrier? (e.g. UPS, FedEx, USPS)',
   },
   ship_date: {
     id: 'ship_date',
     label: 'Ship Date',
-    description: 'When the package shipped',
+    description: 'When did the shipment go out?',
   },
   order_id: {
     id: 'order_id',
     label: 'Order ID',
-    description: 'Your order reference or number',
+    description: 'Your internal order reference number.',
   },
   tracking_number: {
     id: 'tracking_number',
     label: 'Tracking Number',
-    description: 'Carrier tracking number',
+    description: "The carrier's tracking number for each shipment.",
   },
   ship_cost: {
     id: 'ship_cost',
     label: 'Shipping Cost',
-    description: 'What you paid to ship each order',
+    description: 'The actual dollar amount charged per shipment.',
   },
   service: {
     id: 'service',
     label: 'Service Level',
-    description: 'The shipping service — Ground, Priority, etc.',
+    description: 'The service level used — like Ground, Priority, 2-Day.',
   },
   weight: {
     id: 'weight',
     label: 'Weight',
-    description: 'Package weight',
+    description: 'Package weight, usually in lbs or oz.',
   },
 }
 

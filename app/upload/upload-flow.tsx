@@ -344,6 +344,7 @@ export default function UploadFlow({ creditBalance }: Props) {
           Make sure your export includes these columns. The names don&apos;t have to match
           exactly — we&apos;ll help you match them up after you upload.
         </p>
+        <p className="text-xs font-mono text-ani-muted uppercase tracking-wide mb-3">Here&apos;s what Ani will look at for you:</p>
         <div className="border border-ani-border rounded-xl divide-y divide-ani-border mb-6 bg-ani-surface overflow-hidden">
           {requiredConcepts.map((conceptId: ConceptId) => {
             const concept = CONCEPTS[conceptId]
@@ -356,7 +357,7 @@ export default function UploadFlow({ creditBalance }: Props) {
           })}
         </div>
         <p className="text-xs text-ani-muted mb-8">
-          Once your export is ready, come back and upload it below.
+          This analysis costs <span className="text-ani-white font-medium">{totalCredits} {totalCredits === 1 ? 'credit' : 'credits'}</span> from your balance. Once your export is ready, come back and upload it.
         </p>
         <BottomBar
           totalCredits={totalCredits}
@@ -439,16 +440,18 @@ export default function UploadFlow({ creditBalance }: Props) {
         <ProgressBar stepIndex={stepIndex} />
         <h1 className="font-mono text-2xl font-bold text-ani-white mb-2">Match your columns</h1>
         <p className="text-sm text-ani-muted mb-4">
-          We pre-filled what we could. Make sure everything looks right before continuing.
+          Help Ani find the right columns in your file. She&apos;ll do her best to match them automatically — just confirm or correct below.
         </p>
         {fileStats && file && (
-          <div className="flex items-center gap-3 mb-8">
-            <span className="text-xs font-mono text-ani-copper bg-ani-surface border border-ani-border rounded-lg px-3 py-1.5 truncate max-w-[200px]">
-              {file.name}
-            </span>
-            <span className="text-xs text-ani-muted shrink-0">
-              {fileStats.rows.toLocaleString()} rows · {fileStats.cols} columns
-            </span>
+          <div className="mb-8">
+            <div className="flex items-center gap-3 mb-2">
+              <span className="text-xs font-mono text-ani-copper bg-ani-surface border border-ani-border rounded-lg px-3 py-1.5 truncate max-w-[200px]">
+                {file.name}
+              </span>
+            </div>
+            <p className="text-xs text-ani-muted">
+              Looks good! Ani found <span className="text-ani-white">{fileStats.rows.toLocaleString()} shipment rows</span> across <span className="text-ani-white">{fileStats.cols} columns</span>. Here&apos;s what she&apos;ll work with.
+            </p>
           </div>
         )}
         <div className="space-y-5 mb-8">
@@ -498,7 +501,12 @@ export default function UploadFlow({ creditBalance }: Props) {
     return (
       <div className="pb-24">
         <ProgressBar stepIndex={stepIndex} />
-        <h1 className="font-mono text-2xl font-bold text-ani-white mb-6">Ready to run</h1>
+        <h1 className="font-mono text-2xl font-bold text-ani-white mb-2">Ready to run</h1>
+        <p className="text-sm text-ani-muted mb-6">
+          {hasCredits
+            ? "You're good to go. Ani's ready when you are."
+            : "You're a little short for this one. No worries — grab a few more credits and you'll be all set."}
+        </p>
         <div className="border border-ani-border rounded-xl p-5 mb-4 space-y-2 bg-ani-surface">
           {chosen.map((o) => (
             <div key={o.id} className="flex justify-between text-sm">
@@ -509,15 +517,15 @@ export default function UploadFlow({ creditBalance }: Props) {
             </div>
           ))}
           <div className="border-t border-ani-border pt-2 mt-2 flex justify-between text-sm font-medium">
-            <span className="text-ani-white">Total</span>
+            <span className="text-ani-white">This report will use</span>
             <span className="text-ani-copper font-mono">
               {totalCredits} {totalCredits === 1 ? 'credit' : 'credits'}
             </span>
           </div>
         </div>
         <div className="flex justify-between items-center text-xs text-ani-muted mb-6 px-1">
-          <span>Your balance</span>
-          <span className="font-mono">{effectiveBalance} {effectiveBalance === 1 ? 'credit' : 'credits'}</span>
+          <span>You currently have</span>
+          <span className="font-mono">{effectiveBalance} {effectiveBalance === 1 ? 'credit' : 'credits'} available</span>
         </div>
         {submitError && (
           <p className="text-sm text-ani-red mb-4 bg-ani-red-dim px-4 py-3 rounded-lg">{submitError}</p>

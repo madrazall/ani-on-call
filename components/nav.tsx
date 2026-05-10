@@ -32,7 +32,10 @@ export default async function Nav() {
         <div className="flex items-center gap-1">
           {user ? (
             <>
-              <span className="text-sm font-mono text-ani-copper hidden sm:inline mr-2">
+              <span
+                className="text-sm font-mono text-ani-copper hidden sm:inline mr-2 cursor-default"
+                title="Credits are how you pay for reports. Each analysis type costs a set amount — you can buy more any time."
+              >
                 {balance} {balance === 1 ? "credit" : "credits"}
               </span>
               <Link

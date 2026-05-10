@@ -13,14 +13,14 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     name: 'Starter',
     credits: 5,
     price: 500,
-    description: 'Perfect for trying it out. Covers 2–3 analyses.',
+    description: 'Good for a quick one-time check.',
   },
   {
     id: 'standard',
     name: 'Standard',
     credits: 15,
     price: 1200,
-    description: 'Best value for regular check-ins. Covers 5–7 analyses.',
+    description: "Great if you're doing a full audit or plan to run a few reports.",
     popular: true,
   },
   {
@@ -28,6 +28,6 @@ export const CREDIT_PACKAGES: CreditPackage[] = [
     name: 'Pro',
     credits: 50,
     price: 3500,
-    description: 'For teams that audit monthly. Covers 15+ analyses.',
+    description: 'For power users who want to dig deep or run reports regularly.',
   },
 ]

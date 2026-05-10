@@ -30,8 +30,8 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         <div className="border border-ani-border bg-ani-red-dim rounded-xl p-6 mb-8">
           <p className="font-mono text-sm font-medium text-ani-red mb-1">Analysis failed</p>
           <p className="text-sm text-ani-muted">
-            Something went wrong while processing your file. Your credits have not been
-            refunded automatically — reach out and we&apos;ll sort it out.
+            Something went sideways with this report. It happens sometimes — your credits were not charged.
+            Try running it again or reach out if the problem sticks around.
           </p>
         </div>
         <Link href="/upload" className="text-sm text-ani-copper hover:opacity-80 transition-opacity">
@@ -51,7 +51,7 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
           <div className="w-1.5 h-1.5 rounded-full bg-ani-copper animate-pulse [animation-delay:300ms]" />
         </div>
         <p className="font-mono text-lg text-ani-white">Ani&apos;s on it.</p>
-        <p className="text-sm text-ani-muted mt-2">Running your analysis…</p>
+        <p className="text-sm text-ani-muted mt-2">She&apos;s going through your data now. This usually only takes a moment.</p>
       </div>
     )
   }
@@ -61,9 +61,14 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
     <div className="max-w-2xl mx-auto px-4 py-12">
       <div className="mb-10">
         <p className="text-xs font-mono text-ani-muted mb-1">
-          {report.credits_used} {report.credits_used === 1 ? 'credit' : 'credits'} used
+          Run on {new Date(report.created_at).toLocaleDateString('en-US', {
+            month: 'short', day: 'numeric', year: 'numeric',
+          })}
         </p>
         <h1 className="font-mono text-2xl font-bold text-ani-white">Your results</h1>
+        <p className="text-xs text-ani-muted mt-1">
+          {report.credits_used} {report.credits_used === 1 ? 'credit' : 'credits'} used for this report
+        </p>
       </div>
 
       <div className="space-y-6">
@@ -73,6 +78,9 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
             <div key={result.outcomeId} className="border border-ani-border bg-ani-surface rounded-xl overflow-hidden">
               <div className="px-5 py-4 border-b border-ani-border">
                 <p className="text-xs font-mono text-ani-muted mb-1">{outcome?.name ?? result.outcomeId}</p>
+                {outcome?.intro && (
+                  <p className="text-xs text-ani-muted mb-3 leading-relaxed">{outcome.intro}</p>
+                )}
                 <p className="text-sm text-ani-white leading-relaxed">{result.summary}</p>
               </div>
 
@@ -95,18 +103,13 @@ export default async function ReportPage({ params }: { params: Promise<{ id: str
         })}
       </div>
 
-      <div className="mt-10 pt-8 border-t border-ani-border flex items-center justify-between">
+      <div className="mt-10 pt-8 border-t border-ani-border">
         <Link
           href="/upload"
           className="text-sm text-ani-copper hover:opacity-80 transition-opacity"
         >
           Run another analysis →
         </Link>
-        <span className="text-xs text-ani-muted font-mono">
-          {new Date(report.created_at).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric', year: 'numeric',
-          })}
-        </span>
       </div>
     </div>
   )
