@@ -6,6 +6,32 @@ import { createCheckoutSession } from './actions'
 
 export default function BuyPage() {
   const [pending, setPending] = useState<string | null>(null)
+  const [promoCode, setPromoCode] = useState('')
+  const [promoLoading, setPromoLoading] = useState(false)
+  const [promoError, setPromoError] = useState<string | null>(null)
+  const [promoSuccess, setPromoSuccess] = useState<string | null>(null)
+
+  async function handlePromo(e: React.FormEvent) {
+    e.preventDefault()
+    setPromoError(null)
+    setPromoSuccess(null)
+    setPromoLoading(true)
+
+    const res = await fetch('/api/redeem-promo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: promoCode }),
+    })
+    const data = await res.json()
+
+    if (!res.ok) {
+      setPromoError(data.error || 'Something went wrong.')
+    } else {
+      setPromoSuccess(data.message)
+      setPromoCode('')
+    }
+    setPromoLoading(false)
+  }
 
   async function handleBuy(packageId: string) {
     setPending(packageId)
@@ -91,6 +117,35 @@ export default function BuyPage() {
       <p className="text-center text-xs text-ani-muted mt-12">
         Credits don&apos;t expire. No subscription. No refunds if a report runs clean.
       </p>
+
+      {/* Promo code */}
+      <div className="mt-12 max-w-sm mx-auto">
+        <p className="text-xs font-mono text-ani-muted uppercase tracking-widest mb-3 text-center">
+          Have a promo code?
+        </p>
+        <form onSubmit={handlePromo} className="flex gap-2">
+          <input
+            type="text"
+            value={promoCode}
+            onChange={e => setPromoCode(e.target.value)}
+            placeholder="Enter code"
+            className="flex-1 px-3 py-2.5 border border-ani-border rounded-lg text-sm bg-ani-surface text-ani-white placeholder:text-ani-muted focus:outline-none focus:ring-2 focus:ring-ani-copper focus:border-transparent transition-colors uppercase"
+          />
+          <button
+            type="submit"
+            disabled={promoLoading || !promoCode.trim()}
+            className="px-4 py-2.5 bg-ani-copper text-ani-white text-sm font-medium rounded-lg hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {promoLoading ? '…' : 'Apply'}
+          </button>
+        </form>
+        {promoError && (
+          <p className="text-sm text-ani-red mt-2 text-center">{promoError}</p>
+        )}
+        {promoSuccess && (
+          <p className="text-sm text-ani-copper mt-2 text-center">{promoSuccess}</p>
+        )}
+      </div>
     </div>
   )
 }
