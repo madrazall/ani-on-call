@@ -8,7 +8,7 @@ export async function sendFeedbackConfirmationEmail(email: string, name?: string
   const greeting = name ? `Hey ${name},` : 'Hey there,'
 
   await resend.emails.send({
-    from: 'noreply@anioncall.digital',
+    from: 'noreply@send.anioncall.digital',
     to: email,
     subject: 'Got it — your 3 credits are on the way',
     text: `${greeting}
