@@ -1,4 +1,5 @@
 import Link from "next/link";
+import RotatingQuote from "@/components/rotating-quote";
 
 export default function HomePage() {
   return (
@@ -9,11 +10,9 @@ export default function HomePage() {
         <p className="text-xs font-mono text-ani-copper uppercase tracking-widest mb-8">
           Not Ani&apos;s first rodeo.
         </p>
-        <h1 className="font-mono text-4xl md:text-6xl font-bold text-ani-white leading-tight tracking-tight mb-8">
-          &ldquo;I&apos;m filling orders around the clock.
-          <br />
-          <span className="text-ani-muted">Why am I barely making a profit?&rdquo;</span>
-        </h1>
+        <div className="mb-8">
+          <RotatingQuote />
+        </div>
         <p className="text-lg text-ani-muted leading-relaxed max-w-xl mb-12">
           Shipping charges. They&apos;re small enough to ignore and big enough to matter.
           Ani looks at your data and shows you exactly where the money went.
