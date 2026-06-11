@@ -360,6 +360,63 @@ function analyzeReturnPressure(rows: Row[]): AnalysisResult {
   }
 }
 
+// ── Shipping Margin ──────────────────────────────────────────────────
+
+function analyzeShippingMargin(rows: Row[]): AnalysisResult {
+  const valid = rows.filter(r => r.ship_cost && r.quoted_cost)
+  if (valid.length === 0) {
+    return {
+      outcomeId: 'shipping-margin',
+      summary: 'Need both carrier cost and customer shipping charge columns to run this analysis.',
+      findings: [],
+    }
+  }
+
+  const parsed = valid.map(r => ({
+    ...r,
+    paid: parseCost(r.ship_cost),
+    charged: parseCost(r.quoted_cost),
+  }))
+
+  const totalPaid = parsed.reduce((sum, r) => sum + r.paid, 0)
+  const totalCharged = parsed.reduce((sum, r) => sum + r.charged, 0)
+  const totalMargin = totalCharged - totalPaid
+  const underchargedCount = parsed.filter(r => r.charged < r.paid).length
+
+  const byCarrier = groupBy(valid, 'carrier')
+  const carrierStats = [...byCarrier.entries()].map(([carrier, rs]) => {
+    const cpaid = rs.reduce((sum, r) => sum + parseCost(r.ship_cost), 0)
+    const ccharged = rs.reduce((sum, r) => sum + parseCost(r.quoted_cost), 0)
+    return { carrier, margin: ccharged - cpaid, count: rs.length }
+  }).sort((a, b) => a.margin - b.margin)
+
+  const worstCarrier = carrierStats[0]
+
+  const summary = totalMargin >= 0
+    ? `You collected ${currency(totalCharged)} in shipping and paid ${currency(totalPaid)} — a net gain of ${currency(totalMargin)} across ${valid.length} shipments. ${underchargedCount > 0 ? `${underchargedCount} individual shipments cost more than you charged.` : ''}`
+    : `You collected ${currency(totalCharged)} in shipping but paid ${currency(totalPaid)} — you're absorbing ${currency(Math.abs(totalMargin))} in shipping costs across ${valid.length} shipments.`
+
+  return {
+    outcomeId: 'shipping-margin',
+    summary,
+    findings: [
+      { label: 'Total charged to customers', value: currency(totalCharged) },
+      { label: 'Total paid to carriers', value: currency(totalPaid) },
+      {
+        label: 'Net shipping margin',
+        value: currency(totalMargin),
+        highlight: totalMargin < 0,
+      },
+      { label: 'Shipments where you lost money', value: String(underchargedCount), highlight: underchargedCount > 0 },
+      ...carrierStats.map(({ carrier, margin, count }) => ({
+        label: carrier || 'Unknown carrier',
+        value: `${currency(margin)} margin · ${count} shipments`,
+        highlight: margin < 0,
+      })),
+    ],
+  }
+}
+
 // ── Dispatcher ───────────────────────────────────────────────────────
 
 export function runAnalysis(outcomeId: string, rows: Row[]): AnalysisResult {
@@ -372,6 +429,7 @@ export function runAnalysis(outcomeId: string, rows: Row[]): AnalysisResult {
     case 'packaging-variance':    return analyzePackagingVariance(rows)
     case 'fulfillment-integrity': return analyzeFulfillmentIntegrity(rows)
     case 'return-pressure':       return analyzeReturnPressure(rows)
+    case 'shipping-margin':       return analyzeShippingMargin(rows)
     default:
       return { outcomeId, summary: `Unknown analysis type: ${outcomeId}`, findings: [] }
   }

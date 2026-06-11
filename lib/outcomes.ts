@@ -63,4 +63,11 @@ export const OUTCOMES: Outcome[] = [
     credits: 2,
     intro: "Multi-shipment orders — where the same order needed more than one shipment — can indicate fulfillment issues, damaged goods, or carrier problems. Here's how yours breaks down.",
   },
+  {
+    id: 'shipping-margin',
+    name: "What You're Making (or Losing) on Shipping",
+    description: "Compare what you charged customers for shipping against what you actually paid.",
+    credits: 2,
+    intro: "This shows whether your shipping charges are covering your actual carrier costs — or quietly eating into your margin. A small gap per order adds up fast.",
+  },
 ]

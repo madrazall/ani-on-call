@@ -4,6 +4,7 @@ export type ConceptId =
   | 'order_id'
   | 'tracking_number'
   | 'ship_cost'
+  | 'quoted_cost'
   | 'service'
   | 'weight'
 
@@ -44,8 +45,13 @@ export const CONCEPTS: Record<ConceptId, Concept> = {
   },
   ship_cost: {
     id: 'ship_cost',
-    label: 'Shipping Cost',
-    description: 'The actual dollar amount charged per shipment.',
+    label: 'Shipping Cost (Carrier)',
+    description: 'What you actually paid the carrier per shipment.',
+  },
+  quoted_cost: {
+    id: 'quoted_cost',
+    label: 'Shipping Charged to Customer',
+    description: 'What you charged your customer for shipping.',
   },
   service: {
     id: 'service',
@@ -69,6 +75,7 @@ export const OUTCOME_CONCEPTS: Record<string, ConceptId[]> = {
   'packaging-variance':     ['carrier', 'weight', 'ship_cost'],
   'fulfillment-integrity':  ['order_id', 'tracking_number'],
   'return-pressure':        ['carrier', 'order_id', 'ship_date'],
+  'shipping-margin':        ['ship_cost', 'quoted_cost', 'carrier'],
 }
 
 const ALIASES: Record<ConceptId, string[]> = {
@@ -97,6 +104,12 @@ const ALIASES: Record<ConceptId, string[]> = {
     'cost', 'postage amount', 'label cost', 'price', 'shipping amount',
     'total charge', 'ship_cost', 'amount', 'shipping fee', 'freight cost',
     'shipment cost',
+  ],
+  quoted_cost: [
+    'quoted cost', 'customer shipping', 'shipping charged', 'charged to customer',
+    'shipping revenue', 'shipping collected', 'customer shipping cost',
+    'shipping quote', 'quoted shipping', 'shipping price charged',
+    'customer charge', 'shipping billed', 'billed shipping',
   ],
   service: [
     'service', 'service level', 'service type', 'mail class',
