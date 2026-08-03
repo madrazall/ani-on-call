@@ -2,19 +2,19 @@
 
 /* ── Ani On Call brand tokens ─────────────────────────────────────── */
 :root {
-  --ani-bg:          #1A1714;
-  --ani-surface:     #242019;
-  --ani-surface2:    #2E2822;
-  --ani-copper:      #B76E79;
-  --ani-copper-dim:  #B76E7918;
-  --ani-copper-mid:  #B76E7950;
-  --ani-white:       #F5F0EB;
-  --ani-muted:       #8C847E;
-  --ani-border:      #3A3330;
-  --ani-rust:        #6B3F3A;
-  --ani-green:       #4ADE80;
+  --ani-bg:          #0f3c5d;
+  --ani-surface:     #214f72;
+  --ani-surface2:    #2d6579;
+  --ani-copper:      #2daedd;
+  --ani-copper-dim:  #75c7e4;
+  --ani-copper-mid:  #57b5d7;
+  --ani-white:       #cadde4;
+  --ani-muted:       #214f72;
+  --ani-border:      #2d6579;
+  --ani-rust:        #f89f45;
+  --ani-green:       #040505;
   --ani-green-dim:   #1A3A2A;
-  --ani-red:         #F87171;
+  --ani-red:         #f89f45;
   --ani-red-dim:     #3A1A1A;
 }
 
