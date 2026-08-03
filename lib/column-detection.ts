@@ -69,6 +69,10 @@ export const OUTCOME_CONCEPTS: Record<string, ConceptId[]> = {
   'packaging-variance':     ['carrier', 'weight', 'ship_cost'],
   'fulfillment-integrity':  ['order_id', 'tracking_number'],
   'return-pressure':        ['carrier', 'order_id', 'ship_date'],
+  'weight-bracket-creep':   ['weight', 'ship_cost'],
+  'service-level-overspend': ['service', 'weight', 'ship_cost'],
+  'reship-root-cause':      ['order_id', 'carrier', 'weight'],
+  'cost-creep-over-time':   ['ship_date', 'ship_cost'],
 }
 
 const ALIASES: Record<ConceptId, string[]> = {

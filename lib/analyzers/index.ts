@@ -360,18 +360,281 @@ function analyzeReturnPressure(rows: Row[]): AnalysisResult {
   }
 }
 
+// ── Weight Bracket Creep ─────────────────────────────────────────────
+
+const WEIGHT_BRACKETS = [1, 2, 3, 5, 10, 15, 20, 30, 50]
+const CREEP_MARGIN = 0.3 // lbs above a bracket line still counts as "just tipped over"
+
+function analyzeWeightBracketCreep(rows: Row[]): AnalysisResult {
+  const valid = rows
+    .filter(r => r.ship_cost && r.weight)
+    .map(r => ({ cost: parseCost(r.ship_cost), wt: parseWeight(r.weight) }))
+    .filter(r => r.wt > 0)
+
+  if (valid.length < 5) {
+    return { outcomeId: 'weight-bracket-creep', summary: 'Not enough weight and cost data to check for bracket creep.', findings: [] }
+  }
+
+  const groups = WEIGHT_BRACKETS.map(threshold => {
+    const justOver = valid.filter(r => r.wt > threshold && r.wt <= threshold + CREEP_MARGIN)
+    const justUnder = valid.filter(r => r.wt > threshold - CREEP_MARGIN && r.wt <= threshold)
+    if (justOver.length === 0) return null
+
+    const avgOverCost = justOver.reduce((s, r) => s + r.cost, 0) / justOver.length
+    const avgUnderCost = justUnder.length > 0
+      ? justUnder.reduce((s, r) => s + r.cost, 0) / justUnder.length
+      : null
+
+    return { threshold, count: justOver.length, avgOverCost, avgUnderCost }
+  }).filter((g): g is NonNullable<typeof g> => g !== null)
+
+  if (groups.length === 0) {
+    return {
+      outcomeId: 'weight-bracket-creep',
+      summary: 'No shipments found sitting just above a common weight bracket line.',
+      findings: [],
+    }
+  }
+
+  const withGap = groups.filter(g => g.avgUnderCost !== null && g.avgOverCost > g.avgUnderCost)
+  const totalShipments = groups.reduce((s, g) => s + g.count, 0)
+  const estimatedExtra = withGap.reduce((s, g) => s + (g.avgOverCost - (g.avgUnderCost as number)) * g.count, 0)
+
+  const summary = withGap.length > 0
+    ? `${totalShipments} shipments landed just over a weight bracket line. Where a cheaper bracket was visible just below it, that creep may have cost you roughly ${currency(estimatedExtra)}.`
+    : `${totalShipments} shipments landed just over a weight bracket line, but there wasn't enough data just under the line to estimate the cost difference yet.`
+
+  return {
+    outcomeId: 'weight-bracket-creep',
+    summary,
+    findings: [...groups]
+      .sort((a, b) => b.count - a.count)
+      .map(g => ({
+        label: `Just over ${g.threshold} lb${g.threshold === 1 ? '' : 's'}`,
+        value: g.avgUnderCost !== null
+          ? `${g.count} shipments · avg ${currency(g.avgOverCost)} vs ${currency(g.avgUnderCost)} just under the line`
+          : `${g.count} shipments · avg ${currency(g.avgOverCost)} (no comparison data just under)`,
+        highlight: g.avgUnderCost !== null && g.avgOverCost > g.avgUnderCost,
+      })),
+  }
+}
+
+// ── Service Level Overspend ──────────────────────────────────────────
+
+const WEIGHT_BUCKETS = [
+  { label: 'Under 1 lb', min: 0, max: 1 },
+  { label: '1–5 lbs', min: 1, max: 5 },
+  { label: '5–10 lbs', min: 5, max: 10 },
+  { label: 'Over 10 lbs', min: 10, max: Infinity },
+]
+
+function analyzeServiceOverspend(rows: Row[]): AnalysisResult {
+  const valid = rows
+    .filter(r => r.service && r.ship_cost && r.weight)
+    .map(r => ({ service: r.service.trim(), cost: parseCost(r.ship_cost), wt: parseWeight(r.weight) }))
+    .filter(r => r.wt > 0 && r.service)
+
+  if (valid.length < 5) {
+    return { outcomeId: 'service-level-overspend', summary: 'Not enough service-level and weight data to compare.', findings: [] }
+  }
+
+  const findings: Finding[] = []
+  let totalOverspend = 0
+  let flaggedShipments = 0
+
+  for (const bucket of WEIGHT_BUCKETS) {
+    const inBucket = valid.filter(r => r.wt >= bucket.min && r.wt < bucket.max)
+
+    // groupBy() operates on Row (string-keyed) objects; these are pre-parsed numerics, so group manually
+    const serviceGroups = new Map<string, { cost: number; wt: number }[]>()
+    for (const r of inBucket) {
+      if (!serviceGroups.has(r.service)) serviceGroups.set(r.service, [])
+      serviceGroups.get(r.service)!.push(r)
+    }
+
+    if (serviceGroups.size < 2) continue
+
+    const serviceAvgs = [...serviceGroups.entries()]
+      .map(([service, rs]) => ({ service, avg: rs.reduce((s, r) => s + r.cost, 0) / rs.length, count: rs.length }))
+      .sort((a, b) => a.avg - b.avg)
+
+    const cheapest = serviceAvgs[0]
+
+    for (const s of serviceAvgs.slice(1)) {
+      const premium = (s.avg - cheapest.avg) * s.count
+      if (premium <= 0) continue
+      totalOverspend += premium
+      flaggedShipments += s.count
+      findings.push({
+        label: `${bucket.label} — ${s.service}`,
+        value: `${s.count} shipments · avg ${currency(s.avg)} vs ${currency(cheapest.avg)} for ${cheapest.service} at this weight`,
+        highlight: true,
+      })
+    }
+
+    findings.push({
+      label: `${bucket.label} — cheapest option`,
+      value: `${cheapest.service} · avg ${currency(cheapest.avg)} · ${cheapest.count} shipments`,
+    })
+  }
+
+  if (findings.length === 0) {
+    return {
+      outcomeId: 'service-level-overspend',
+      summary: 'Not enough variety in service levels within the same weight range to compare costs yet.',
+      findings: [],
+    }
+  }
+
+  const summary = flaggedShipments > 0
+    ? `${flaggedShipments} shipments used a pricier service level than similar-weight packages elsewhere in this file — roughly ${currency(totalOverspend)} more than the cheapest comparable option.`
+    : 'Your service-level choices look cost-efficient for the weights you shipped.'
+
+  return { outcomeId: 'service-level-overspend', summary, findings }
+}
+
+// ── Re-ship Root Cause ───────────────────────────────────────────────
+
+function analyzeReshipRootCause(rows: Row[]): AnalysisResult {
+  const withOrder = rows.filter(r => r.order_id)
+  if (withOrder.length === 0) {
+    return { outcomeId: 'reship-root-cause', summary: 'No order data found to trace re-ship causes.', findings: [] }
+  }
+
+  const byOrder = groupBy(withOrder, 'order_id')
+  const orders = [...byOrder.entries()].map(([id, rs]) => ({ id, rows: rs, isMultiShip: rs.length > 1, first: rs[0] }))
+  const multiShip = orders.filter(o => o.isMultiShip)
+
+  if (multiShip.length === 0) {
+    return { outcomeId: 'reship-root-cause', summary: 'No orders needed more than one shipment — no re-ship pattern to trace here.', findings: [] }
+  }
+
+  const byCarrier = new Map<string, { total: number; multi: number }>()
+  for (const o of orders) {
+    const carrier = (o.first.carrier || 'Unknown').trim() || 'Unknown'
+    if (!byCarrier.has(carrier)) byCarrier.set(carrier, { total: 0, multi: 0 })
+    const c = byCarrier.get(carrier)!
+    c.total++
+    if (o.isMultiShip) c.multi++
+  }
+  const carrierRates = [...byCarrier.entries()]
+    .filter(([, v]) => v.total >= 3)
+    .map(([carrier, v]) => ({ carrier, rate: (v.multi / v.total) * 100, total: v.total, multi: v.multi }))
+    .sort((a, b) => b.rate - a.rate)
+
+  const bucketRates = WEIGHT_BUCKETS.map(b => {
+    const inBucket = orders.filter(o => {
+      const wt = parseWeight(o.first.weight || '')
+      return wt >= b.min && wt < b.max
+    })
+    if (inBucket.length < 3) return null
+    const multi = inBucket.filter(o => o.isMultiShip).length
+    return { label: b.label, rate: (multi / inBucket.length) * 100, total: inBucket.length, multi }
+  }).filter((b): b is NonNullable<typeof b> => b !== null)
+    .sort((a, b) => b.rate - a.rate)
+
+  const topCarrier = carrierRates[0]
+  const topBucket = bucketRates[0]
+
+  const parts: string[] = []
+  if (topCarrier) parts.push(`${topCarrier.carrier} orders re-ship at ${topCarrier.rate.toFixed(1)}% (${topCarrier.multi} of ${topCarrier.total})`)
+  if (topBucket) parts.push(`${topBucket.label} shipments re-ship at ${topBucket.rate.toFixed(1)}%`)
+
+  const summary = parts.length > 0
+    ? `${multiShip.length} orders needed more than one shipment. ${parts.join('. ')}.`
+    : `${multiShip.length} orders needed more than one shipment, but there wasn't enough volume per carrier or weight class yet to isolate a pattern.`
+
+  return {
+    outcomeId: 'reship-root-cause',
+    summary,
+    findings: [
+      { label: 'Orders needing a re-ship', value: String(multiShip.length), highlight: true },
+      ...carrierRates.map(c => ({
+        label: `${c.carrier} re-ship rate`,
+        value: `${c.rate.toFixed(1)}% (${c.multi} of ${c.total} orders)`,
+        highlight: topCarrier?.carrier === c.carrier,
+      })),
+      ...bucketRates.map(b => ({
+        label: `${b.label} re-ship rate`,
+        value: `${b.rate.toFixed(1)}% (${b.multi} of ${b.total} orders)`,
+        highlight: topBucket?.label === b.label,
+      })),
+    ],
+  }
+}
+
+// ── Cost Creep Over Time ─────────────────────────────────────────────
+
+function parseMonthKey(v: string): string | null {
+  const d = new Date(v)
+  if (isNaN(d.getTime())) return null
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+}
+
+function monthLabel(key: string): string {
+  const [y, m] = key.split('-').map(Number)
+  return new Date(y, m - 1, 1).toLocaleString('en-US', { month: 'short', year: 'numeric' })
+}
+
+function analyzeCostCreep(rows: Row[]): AnalysisResult {
+  const valid = rows
+    .filter(r => r.ship_date && r.ship_cost)
+    .map(r => ({ month: parseMonthKey(r.ship_date), cost: parseCost(r.ship_cost) }))
+    .filter((r): r is { month: string; cost: number } => r.month !== null)
+
+  if (valid.length < 10) {
+    return { outcomeId: 'cost-creep-over-time', summary: 'Not enough dated shipments to spot a trend yet.', findings: [] }
+  }
+
+  const byMonth = new Map<string, number[]>()
+  for (const r of valid) {
+    if (!byMonth.has(r.month)) byMonth.set(r.month, [])
+    byMonth.get(r.month)!.push(r.cost)
+  }
+
+  const monthly = [...byMonth.entries()]
+    .map(([month, costs]) => ({ month, avg: costs.reduce((a, b) => a + b, 0) / costs.length, count: costs.length }))
+    .sort((a, b) => a.month.localeCompare(b.month))
+
+  if (monthly.length < 2) {
+    return { outcomeId: 'cost-creep-over-time', summary: 'Only one month of data found — upload a wider date range to see a trend.', findings: [] }
+  }
+
+  const first = monthly[0]
+  const last = monthly[monthly.length - 1]
+  const change = first.avg > 0 ? ((last.avg - first.avg) / first.avg) * 100 : 0
+
+  const summary = Math.abs(change) >= 5
+    ? `Average cost per shipment ${change > 0 ? 'climbed' : 'dropped'} ${Math.abs(change).toFixed(1)}% from ${monthLabel(first.month)} (${currency(first.avg)}) to ${monthLabel(last.month)} (${currency(last.avg)}).`
+    : `Average cost per shipment has stayed fairly steady — ${currency(first.avg)} in ${monthLabel(first.month)} to ${currency(last.avg)} in ${monthLabel(last.month)}.`
+
+  return {
+    outcomeId: 'cost-creep-over-time',
+    summary,
+    findings: monthly.map(m => ({
+      label: monthLabel(m.month),
+      value: `${currency(m.avg)} avg — ${m.count} shipments`,
+      highlight: m.month === last.month && Math.abs(change) >= 5,
+    })),
+  }
+}
+
 // ── Dispatcher ───────────────────────────────────────────────────────
 
 export function runAnalysis(outcomeId: string, rows: Row[]): AnalysisResult {
   switch (outcomeId) {
-    case 'carrier-performance':   return analyzeCarrierPerformance(rows)
-    case 'duplicate-charges':     return analyzeDuplicateCharges(rows)
-    case 'budget-breakdown':      return analyzeBudgetBreakdown(rows)
-    case 'margin-erosion':        return analyzeMarginErosion(rows)
-    case 'carrier-variance':      return analyzeCarrierVariance(rows)
-    case 'packaging-variance':    return analyzePackagingVariance(rows)
-    case 'fulfillment-integrity': return analyzeFulfillmentIntegrity(rows)
-    case 'return-pressure':       return analyzeReturnPressure(rows)
+    case 'carrier-performance':    return analyzeCarrierPerformance(rows)
+    case 'duplicate-charges':      return analyzeDuplicateCharges(rows)
+    case 'budget-breakdown':       return analyzeBudgetBreakdown(rows)
+    case 'margin-erosion':         return analyzeMarginErosion(rows)
+    case 'carrier-variance':       return analyzeCarrierVariance(rows)
+    case 'packaging-variance':     return analyzePackagingVariance(rows)
+    case 'fulfillment-integrity':  return analyzeFulfillmentIntegrity(rows)
+    case 'return-pressure':        return analyzeReturnPressure(rows)
+    case 'weight-bracket-creep':   return analyzeWeightBracketCreep(rows)
+    case 'service-level-overspend': return analyzeServiceOverspend(rows)
+    case 'reship-root-cause':      return analyzeReshipRootCause(rows)
+    case 'cost-creep-over-time':   return analyzeCostCreep(rows)
     default:
       return { outcomeId, summary: `Unknown analysis type: ${outcomeId}`, findings: [] }
   }

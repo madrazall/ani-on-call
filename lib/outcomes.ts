@@ -63,4 +63,32 @@ export const OUTCOMES: Outcome[] = [
     credits: 2,
     intro: "Multi-shipment orders — where the same order needed more than one shipment — can indicate fulfillment issues, damaged goods, or carrier problems. Here's how yours breaks down.",
   },
+  {
+    id: 'weight-bracket-creep',
+    name: 'Packages Tipping Into a Pricier Bracket',
+    description: 'Find shipments landing just over a weight line — and what that crept into.',
+    credits: 2,
+    intro: "Carriers price in brackets, so a package that's a hair over a line can jump to a whole new rate. Here's where your shipments are sitting right at that edge, and what it's costing you compared to just under it.",
+  },
+  {
+    id: 'service-level-overspend',
+    name: "Paying For Speed You Didn't Need",
+    description: 'See if premium service levels are costing you more than a comparable weight really needs.',
+    credits: 3,
+    intro: "Ani compared what similar-weight packages cost across your different service levels. If a pricier speed crept in where a cheaper one would've done the job just as well, here's where.",
+  },
+  {
+    id: 'reship-root-cause',
+    name: 'Why Orders Keep Coming Back For a Second Shipment',
+    description: 'Find out if re-ships cluster around a specific carrier or weight class instead of just counting them.',
+    credits: 3,
+    intro: "Multiple shipments on one order usually means something's going wrong upstream. Ani checked whether it's landing on a specific carrier or a specific weight class more than random chance would explain.",
+  },
+  {
+    id: 'cost-creep-over-time',
+    name: 'Is Shipping Quietly Getting More Expensive',
+    description: 'Track your average cost per shipment month over month to catch rate creep before it adds up.',
+    credits: 2,
+    intro: "Rates rarely jump all at once — they creep. Here's how your average cost per shipment has moved over the time range in this file.",
+  },
 ]

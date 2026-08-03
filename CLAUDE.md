@@ -47,11 +47,11 @@ Both RPCs (`increment_credits`, `deduct_credits`) must exist in Supabase and hav
 ### Intake Engine (Decision Tree)
 
 Before uploading, users answer a short question tree defined in `lib/intake/shipping.ts`. Three categories:
-- `losing-money` — binary questions → routes to margin-erosion / duplicate-charges / budget-breakdown
-- `unpredictable-costs` — binary questions → routes to carrier-variance / packaging-variance / budget-breakdown
-- `operational-issues` — select question → routes to carrier-performance / fulfillment-integrity / return-pressure
+- `losing-money` — binary questions → routes to service-level-overspend / margin-erosion / duplicate-charges / budget-breakdown
+- `unpredictable-costs` — binary questions → routes to cost-creep-over-time / weight-bracket-creep / carrier-variance / packaging-variance / budget-breakdown
+- `operational-issues` — select + binary questions → routes to reship-root-cause / carrier-performance / fulfillment-integrity / return-pressure
 
-`resolveRoute(category, answers)` in `lib/intake/index.ts` returns a single outcome ID. The upload flow then proceeds with that outcome pre-selected.
+`resolveRoute(category, answers)` in `lib/intake/index.ts` returns a single outcome ID — routes are checked in order and the first match wins, so more specific routes (e.g. "returns AND clusters by carrier") must be listed before broader ones (e.g. "returns") that would otherwise catch them first. The upload flow then proceeds with that outcome pre-selected.
 
 ### Upload & Analysis Flow
 
@@ -68,7 +68,7 @@ Multi-step client component in `app/upload/upload-flow.tsx` — 6 steps:
 
 ### Analysis Engine
 
-Eight analyzers in `lib/analyzers/index.ts`:
+Twelve analyzers in `lib/analyzers/index.ts`:
 
 | ID | Credits | What it does |
 |---|---|---|
@@ -80,8 +80,12 @@ Eight analyzers in `lib/analyzers/index.ts`:
 | `packaging-variance` | 2 | Cost by weight bucket (under 1lb, 1–5, 5–10, over 10) |
 | `fulfillment-integrity` | 3 | Missing tracking + tracking numbers linked to multiple orders |
 | `return-pressure` | 2 | Multi-shipment orders as proxy for returns/re-ships |
+| `weight-bracket-creep` | 2 | Flags shipments just over a weight-bracket line (1/2/3/5/10/15/20/30/50 lbs), compares their avg cost to shipments just under the same line |
+| `service-level-overspend` | 3 | Within each weight bucket, compares cost across service levels used and estimates the premium paid vs. the cheapest comparable option |
+| `reship-root-cause` | 3 | Computes re-ship *rate* (not just count) per carrier and per weight bucket to isolate what's actually driving multi-shipment orders |
+| `cost-creep-over-time` | 2 | Average cost per shipment by month; flags a ≥5% swing in either direction from the first to last month in the file |
 
-`extractRows(rawRows, columnMap)` maps raw spreadsheet rows to concept-keyed objects before analysis.
+`extractRows(rawRows, columnMap)` maps raw spreadsheet rows to concept-keyed objects before analysis. `weight-bracket-creep`, `service-level-overspend`, and `reship-root-cause` all share the `WEIGHT_BUCKETS` bucketing (under 1 lb / 1–5 / 5–10 / over 10) used by `packaging-variance`.
 
 ### Reports
 
@@ -118,6 +122,7 @@ Full marketing page at `/` with four sections:
 
 ## In Progress / Next Up
 
+- **Recently completed:** expanded from 8 to 12 outcomes — added `weight-bracket-creep`, `service-level-overspend`, `reship-root-cause`, and `cost-creep-over-time`, each wired through `outcomes.ts`, `analyzers/index.ts`, `OUTCOME_CONCEPTS` in `column-detection.ts`, and new intake questions in `shipping.ts`. Landing page's "weight bracket creep" pain point now has a matching analyzer.
 - **Platform presets** — hardcoded column maps for known shipping platforms (ShipStation, Pirateship, EasyPost, FedEx billing, UPS billing) so users don't need to do column mapping. Waiting on sample export files to extract exact column names. Architecture is planned: each preset is a `Record<ConceptId, string>` stored in `lib/presets/`.
 - **Multi-source merge** — allow uploading multiple files from different platforms, applying a preset to each, merging normalized rows before analysis
 - **Custom domain SSL** — `anioncall.digital` is connected to Vercel DNS but SSL cert may still be propagating. Once live, update the Stripe webhook URL.
