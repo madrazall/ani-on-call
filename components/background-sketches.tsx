@@ -1,5 +1,5 @@
 export default function BackgroundSketches() {
-  const ink = "#8C847E"
+  const ink = "#00c8e0"
   const sw = "1.2"
 
   return (

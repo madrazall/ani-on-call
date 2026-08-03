@@ -56,6 +56,12 @@ export default async function Nav() {
           ) : (
             <>
               <Link
+                href="/buy"
+                className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+              >
+                Pricing
+              </Link>
+              <Link
                 href="/sign-in"
                 className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               >

@@ -1,21 +1,21 @@
 @import "tailwindcss";
 
-/* ── Ani On Call brand tokens ─────────────────────────────────────── */
+/* ── Ani On Call brand tokens (matched to External Brain) ────────────── */
 :root {
-  --ani-bg:          #0f3c5d;
-  --ani-surface:     #214f72;
-  --ani-surface2:    #0e4254;
-  --ani-copper:      #2daedd;
-  --ani-copper-dim:  #75c7e4;
-  --ani-copper-mid:  #57b5d7;
-  --ani-white:       #cadde4;
-  --ani-muted:       #214f72;
-  --ani-border:      #2d6579;
-  --ani-rust:        #f89f45;
-  --ani-green:       #040505;
-  --ani-green-dim:   #1A3A2A;
-  --ani-red:         #f89f45;
-  --ani-red-dim:     #3A1A1A;
+  --ani-bg:          #060810;
+  --ani-surface:     #0d1117;
+  --ani-surface2:    #111827;
+  --ani-copper:      #00c8e0;
+  --ani-copper-dim:  rgba(0, 200, 224, 0.10);
+  --ani-copper-mid:  #4dd0e4;
+  --ani-white:       #e6edf3;
+  --ani-muted:       #8b949e;
+  --ani-border:      rgba(0, 200, 224, 0.22);
+  --ani-rust:        #f0b429;
+  --ani-green:       #3fb950;
+  --ani-green-dim:   rgba(63, 185, 80, 0.12);
+  --ani-red:         #f85149;
+  --ani-red-dim:     rgba(248, 81, 73, 0.12);
 }
 
 @theme inline {
@@ -37,6 +37,7 @@
   --color-destructive-foreground: var(--ani-white);
 
   /* Named brand tokens available as bg-ani-copper, text-ani-muted, etc. */
+  --color-ani-bg:         var(--ani-bg);
   --color-ani-copper:     var(--ani-copper);
   --color-ani-copper-dim: var(--ani-copper-dim);
   --color-ani-copper-mid: var(--ani-copper-mid);
