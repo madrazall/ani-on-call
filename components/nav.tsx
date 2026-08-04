@@ -42,7 +42,7 @@ export default async function Nav() {
                 href="/outcomes"
                 className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors hidden sm:inline-block"
               >
-                Outcomes
+                What Ani Checks
               </Link>
               <Link
                 href="/buy"
@@ -65,7 +65,7 @@ export default async function Nav() {
                 href="/outcomes"
                 className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors hidden sm:inline-block"
               >
-                Outcomes
+                What Ani Checks
               </Link>
               <Link
                 href="/buy"
