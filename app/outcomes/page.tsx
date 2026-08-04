@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { OUTCOMES } from "@/lib/outcomes";
+import { isPromoActive } from "@/lib/promo";
 
 export const metadata = {
   title: "All Outcomes — Ani On Call",
@@ -7,6 +8,8 @@ export const metadata = {
 };
 
 export default function OutcomesPage() {
+  const freeTrialActive = isPromoActive();
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-16">
       <p className="text-xs font-mono text-ani-copper uppercase tracking-widest mb-4">
@@ -15,12 +18,17 @@ export default function OutcomesPage() {
       <h1 className="font-mono text-3xl md:text-4xl font-bold text-ani-white mb-3">
         Already know what you&apos;re looking for?
       </h1>
-      <p className="text-sm text-ani-muted leading-relaxed max-w-xl mb-12">
+      <p className="text-sm text-ani-muted leading-relaxed max-w-xl mb-2">
         Skip the guided questions. Pick an analysis below and jump straight to
         uploading your file — you can always add more once you&apos;re in.
       </p>
+      {freeTrialActive && (
+        <p className="text-sm text-ani-copper font-medium mb-2">
+          Your first pick is free, whichever one you choose.
+        </p>
+      )}
 
-      <div className="grid md:grid-cols-2 gap-4 mb-12">
+      <div className="grid md:grid-cols-2 gap-4 mb-12 mt-8">
         {OUTCOMES.map((outcome) => (
           <Link
             key={outcome.id}

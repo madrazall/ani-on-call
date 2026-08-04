@@ -4,6 +4,7 @@ import { createClient as adminClient } from '@supabase/supabase-js'
 import * as XLSX from 'xlsx'
 import { OUTCOMES } from '@/lib/outcomes'
 import { runAnalysis, extractRows } from '@/lib/analyzers'
+import { isPromoActive } from '@/lib/promo'
 
 function admin() {
   return adminClient(
@@ -41,21 +42,41 @@ export async function POST(request: Request) {
 
   const db = admin()
 
-  // Deduct credits atomically
-  const { data: success } = await db.rpc('deduct_credits', {
-    p_user_id: user.id,
-    p_amount: totalCredits,
-  })
-
-  if (!success) {
-    return NextResponse.json({ error: 'Not enough credits.' }, { status: 402 })
+  // First-analysis-free promo: waive the cost if this account has never run a
+  // report before and the promo window is still open. Re-checked here server-side
+  // regardless of what the client believed, since this is what actually charges credits.
+  let isFreeTrialRun = false
+  if (isPromoActive()) {
+    const { count: priorReports } = await db
+      .from('reports')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', user.id)
+    isFreeTrialRun = (priorReports ?? 0) === 0
   }
 
-  await db.from('credit_transactions').insert({
-    user_id: user.id,
-    amount: -totalCredits,
-    reason: `analysis:${outcomeIds.join(',')}`,
-  })
+  if (isFreeTrialRun) {
+    await db.from('credit_transactions').insert({
+      user_id: user.id,
+      amount: 0,
+      reason: `promo:first_free:${outcomeIds.join(',')}`,
+    })
+  } else {
+    // Deduct credits atomically
+    const { data: success } = await db.rpc('deduct_credits', {
+      p_user_id: user.id,
+      p_amount: totalCredits,
+    })
+
+    if (!success) {
+      return NextResponse.json({ error: 'Not enough credits.' }, { status: 402 })
+    }
+
+    await db.from('credit_transactions').insert({
+      user_id: user.id,
+      amount: -totalCredits,
+      reason: `analysis:${outcomeIds.join(',')}`,
+    })
+  }
 
   // Create report row
   const { data: report, error: reportError } = await db
@@ -64,7 +85,7 @@ export async function POST(request: Request) {
       user_id: user.id,
       outcome_ids: outcomeIds,
       vendor: 'unknown',
-      credits_used: totalCredits,
+      credits_used: isFreeTrialRun ? 0 : totalCredits,
       status: 'pending',
     })
     .select('id')

@@ -21,6 +21,7 @@ const STEP_LABELS = ['Select', 'Guide', 'Upload', 'Map', 'Confirm', 'Run']
 
 interface Props {
   creditBalance: number
+  isFirstRunFree: boolean
 }
 
 function ProgressBar({ stepIndex }: { stepIndex: number }) {
@@ -116,7 +117,7 @@ function BottomBar({
   )
 }
 
-function UploadFlowInner({ creditBalance }: Props) {
+function UploadFlowInner({ creditBalance, isFirstRunFree }: Props) {
   const searchParams = useSearchParams()
   const requestedOutcome = searchParams.get('outcome')
   const preselectedOutcome =
@@ -148,7 +149,7 @@ function UploadFlowInner({ creditBalance }: Props) {
     .reduce((sum, o) => sum + o.credits, 0)
 
   const effectiveBalance = liveBalance ?? creditBalance
-  const hasCredits = effectiveBalance >= totalCredits
+  const hasCredits = isFirstRunFree || effectiveBalance >= totalCredits
   const requiredConcepts = getRequiredConcepts(selectedOutcomes)
   const stepIndex = STEPS.indexOf(step)
   const allMapped = requiredConcepts.every((c) => columnMap[c])
@@ -365,7 +366,11 @@ function UploadFlowInner({ creditBalance }: Props) {
           })}
         </div>
         <p className="text-xs text-ani-muted mb-8">
-          This analysis costs <span className="text-ani-white font-medium">{totalCredits} {totalCredits === 1 ? 'credit' : 'credits'}</span> from your balance. Once your export is ready, come back and upload it.
+          {isFirstRunFree ? (
+            <>Your first analysis is <span className="text-ani-copper font-medium">free</span> — no credits needed. Once your export is ready, come back and upload it.</>
+          ) : (
+            <>This analysis costs <span className="text-ani-white font-medium">{totalCredits} {totalCredits === 1 ? 'credit' : 'credits'}</span> from your balance. Once your export is ready, come back and upload it.</>
+          )}
         </p>
         <BottomBar
           totalCredits={totalCredits}
@@ -511,7 +516,9 @@ function UploadFlowInner({ creditBalance }: Props) {
         <ProgressBar stepIndex={stepIndex} />
         <h1 className="font-mono text-2xl font-bold text-ani-white mb-2">Ready to run</h1>
         <p className="text-sm text-ani-muted mb-6">
-          {hasCredits
+          {isFirstRunFree
+            ? "This one's on the house. Ani's ready when you are."
+            : hasCredits
             ? "You're good to go. Ani's ready when you are."
             : "You're a little short for this one. No worries — grab a few more credits and you'll be all set."}
         </p>
@@ -519,31 +526,37 @@ function UploadFlowInner({ creditBalance }: Props) {
           {chosen.map((o) => (
             <div key={o.id} className="flex justify-between text-sm">
               <span className="text-ani-white">{o.name}</span>
-              <span className="text-ani-muted font-mono">
+              <span className={`font-mono ${isFirstRunFree ? 'text-ani-muted line-through' : 'text-ani-muted'}`}>
                 {o.credits} {o.credits === 1 ? 'credit' : 'credits'}
               </span>
             </div>
           ))}
           <div className="border-t border-ani-border pt-2 mt-2 flex justify-between text-sm font-medium">
             <span className="text-ani-white">This report will use</span>
-            <span className="text-ani-copper font-mono">
-              {totalCredits} {totalCredits === 1 ? 'credit' : 'credits'}
-            </span>
+            {isFirstRunFree ? (
+              <span className="text-ani-copper font-mono">Free — first analysis</span>
+            ) : (
+              <span className="text-ani-copper font-mono">
+                {totalCredits} {totalCredits === 1 ? 'credit' : 'credits'}
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex justify-between items-center text-xs text-ani-muted mb-6 px-1">
-          <span>You currently have</span>
-          <span className="font-mono">{effectiveBalance} {effectiveBalance === 1 ? 'credit' : 'credits'} available</span>
-        </div>
+        {!isFirstRunFree && (
+          <div className="flex justify-between items-center text-xs text-ani-muted mb-6 px-1">
+            <span>You currently have</span>
+            <span className="font-mono">{effectiveBalance} {effectiveBalance === 1 ? 'credit' : 'credits'} available</span>
+          </div>
+        )}
         {submitError && (
           <p className="text-sm text-ani-red mb-4 bg-ani-red-dim px-4 py-3 rounded-lg">{submitError}</p>
         )}
         <BottomBar
-          totalCredits={totalCredits}
+          totalCredits={isFirstRunFree ? 0 : totalCredits}
           canProceed={hasCredits}
           onProceed={hasCredits ? handleConfirm : null}
           onBack={() => setStep('map')}
-          ctaLabel={hasCredits ? 'Run analysis' : 'Top up credits'}
+          ctaLabel={isFirstRunFree ? 'Run analysis — free' : hasCredits ? 'Run analysis' : 'Top up credits'}
           buyLink={!hasCredits}
         />
       </div>

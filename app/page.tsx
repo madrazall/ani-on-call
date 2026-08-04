@@ -1,5 +1,6 @@
 import Link from "next/link";
 import RotatingQuote from "@/components/rotating-quote";
+import { isPromoActive } from "@/lib/promo";
 
 /* ── Small inline icon set (no external deps) ──────────────────────── */
 function Icon({ path, className }: { path: string; className?: string }) {
@@ -88,6 +89,8 @@ const ROLES = [
 ];
 
 export default function HomePage() {
+  const freeTrialActive = isPromoActive();
+
   return (
     <div className="flex flex-col">
 
@@ -97,6 +100,12 @@ export default function HomePage() {
           <p className="text-xs font-mono text-ani-copper uppercase tracking-widest mb-8">
             Not Ani&apos;s first rodeo.
           </p>
+          {freeTrialActive && (
+            <div className="inline-flex items-center gap-2 rounded-full border border-ani-border bg-ani-copper-dim px-3 py-1.5 mb-6">
+              <Icon path={ICONS.check} className="w-3.5 h-3.5 text-ani-copper shrink-0" />
+              <span className="text-xs text-ani-white">Your first analysis is free — any outcome, for a limited time</span>
+            </div>
+          )}
           <div className="mb-8">
             <RotatingQuote />
           </div>
