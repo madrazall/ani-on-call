@@ -100,7 +100,7 @@ export async function POST(request: Request) {
     if (!file) throw new Error('No file provided')
 
     const buffer = await file.arrayBuffer()
-    const workbook = XLSX.read(buffer, { type: 'array' })
+    const workbook = XLSX.read(buffer, { type: 'array', cellDates: true })
     const sheet = workbook.Sheets[workbook.SheetNames[0]]
     const rawRows = XLSX.utils.sheet_to_json<unknown[]>(sheet, { header: 1 })
     const rows = extractRows(rawRows, columnMap)

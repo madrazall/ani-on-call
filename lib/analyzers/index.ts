@@ -651,7 +651,14 @@ export function extractRows(
       const obj: Row = {}
       for (const [concept, columnName] of Object.entries(columnMap)) {
         const idx = headers.indexOf(columnName)
-        if (idx >= 0) obj[concept] = String((row as unknown[])[idx] ?? '')
+        if (idx < 0) continue
+        const raw = (row as unknown[])[idx]
+        // Dates parse to JS Date objects when cellDates is enabled on read —
+        // format as an unambiguous ISO date rather than a locale-dependent
+        // string, so downstream `new Date(...)` parsing is reliable.
+        obj[concept] = raw instanceof Date
+          ? raw.toISOString().slice(0, 10)
+          : String(raw ?? '')
       }
       return obj
     })
