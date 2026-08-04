@@ -12,10 +12,18 @@ async function getBalance(userId: string): Promise<number> {
   return data?.balance ?? 0
 }
 
-export default async function UploadPage() {
+export default async function UploadPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ outcome?: string }>
+}) {
+  const { outcome } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/sign-in')
+  if (!user) {
+    const next = outcome ? `/upload?outcome=${encodeURIComponent(outcome)}` : '/upload'
+    redirect(`/sign-in?next=${encodeURIComponent(next)}`)
+  }
 
   const balance = await getBalance(user.id)
 

@@ -39,6 +39,12 @@ export default async function Nav() {
                 {balance} {balance === 1 ? "credit" : "credits"}
               </span>
               <Link
+                href="/outcomes"
+                className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors hidden sm:inline-block"
+              >
+                Outcomes
+              </Link>
+              <Link
                 href="/buy"
                 className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
               >
@@ -55,6 +61,12 @@ export default async function Nav() {
             </>
           ) : (
             <>
+              <Link
+                href="/outcomes"
+                className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors hidden sm:inline-block"
+              >
+                Outcomes
+              </Link>
               <Link
                 href="/buy"
                 className="text-sm px-3 py-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"

@@ -2,10 +2,12 @@
 
 import { Suspense } from 'react'
 import { useState } from 'react'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 
 function SignInForm() {
+  const searchParams = useSearchParams()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
@@ -25,7 +27,8 @@ function SignInForm() {
       return
     }
 
-    window.location.href = '/upload'
+    const next = searchParams.get('next')
+    window.location.href = next && next.startsWith('/') ? next : '/upload'
   }
 
   return (

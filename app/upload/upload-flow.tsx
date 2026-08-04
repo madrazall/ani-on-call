@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { Suspense, useState, useRef } from 'react'
+import { useSearchParams } from 'next/navigation'
 import * as XLSX from 'xlsx'
 import {
   detectColumns,
@@ -115,8 +116,13 @@ function BottomBar({
   )
 }
 
-export default function UploadFlow({ creditBalance }: Props) {
-  const [step, setStep] = useState<Step>('select')
+function UploadFlowInner({ creditBalance }: Props) {
+  const searchParams = useSearchParams()
+  const requestedOutcome = searchParams.get('outcome')
+  const preselectedOutcome =
+    requestedOutcome && OUTCOMES.some((o) => o.id === requestedOutcome) ? requestedOutcome : null
+
+  const [step, setStep] = useState<Step>(preselectedOutcome ? 'guide' : 'select')
 
   // Intake state
   const [intakeCategory, setIntakeCategory] = useState<Category | null>(null)
@@ -127,7 +133,9 @@ export default function UploadFlow({ creditBalance }: Props) {
   const [file, setFile] = useState<File | null>(null)
   const [fileStats, setFileStats] = useState<{ rows: number; cols: number } | null>(null)
   const [headers, setHeaders] = useState<string[]>([])
-  const [selectedOutcomes, setSelectedOutcomes] = useState<string[]>([])
+  const [selectedOutcomes, setSelectedOutcomes] = useState<string[]>(
+    preselectedOutcome ? [preselectedOutcome] : []
+  )
   const [columnMap, setColumnMap] = useState<ColumnMap>({})
   const [fileError, setFileError] = useState<string | null>(null)
   const [submitError, setSubmitError] = useState<string | null>(null)
@@ -553,5 +561,13 @@ export default function UploadFlow({ creditBalance }: Props) {
       <p className="font-mono text-lg text-ani-white">Ani&apos;s on it.</p>
       <p className="text-sm text-ani-muted mt-2">Running your analysis…</p>
     </div>
+  )
+}
+
+export default function UploadFlow(props: Props) {
+  return (
+    <Suspense>
+      <UploadFlowInner {...props} />
+    </Suspense>
   )
 }
