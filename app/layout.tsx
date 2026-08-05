@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { IBM_Plex_Mono, DM_Sans } from "next/font/google";
+import { GoogleAnalytics } from "@next/third-parties/google";
 import "./globals.css";
 import Nav from "@/components/nav";
 import BackgroundSketches from "@/components/background-sketches";
@@ -32,6 +33,7 @@ export default function RootLayout({
         <Nav />
         <main className="flex-1">{children}</main>
       </body>
+      <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || "G-E1PV3YLPDL"} />
     </html>
   );
 }

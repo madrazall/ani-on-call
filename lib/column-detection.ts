@@ -61,13 +61,13 @@ export const CONCEPTS: Record<ConceptId, Concept> = {
 
 // Which concepts each outcome needs
 export const OUTCOME_CONCEPTS: Record<string, ConceptId[]> = {
-  'carrier-performance':    ['carrier', 'ship_date'],
-  'duplicate-charges':      ['order_id', 'tracking_number'],
+  'carrier-performance':    ['carrier', 'ship_date', 'ship_cost'],
+  'duplicate-charges':      ['order_id', 'tracking_number', 'ship_cost'],
   'budget-breakdown':       ['carrier', 'ship_cost', 'ship_date'],
   'margin-erosion':         ['carrier', 'service', 'weight', 'ship_cost'],
   'carrier-variance':       ['carrier', 'service', 'ship_cost'],
   'packaging-variance':     ['carrier', 'weight', 'ship_cost'],
-  'fulfillment-integrity':  ['order_id', 'tracking_number'],
+  'fulfillment-integrity':  ['order_id', 'tracking_number', 'carrier'],
   'return-pressure':        ['carrier', 'order_id', 'ship_date'],
   'weight-bracket-creep':   ['weight', 'ship_cost'],
   'service-level-overspend': ['service', 'weight', 'ship_cost'],

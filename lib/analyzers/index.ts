@@ -51,22 +51,33 @@ function analyzeCarrierPerformance(rows: Row[]): AnalysisResult {
 
   const groups = groupBy(valid, 'carrier')
   const total = valid.length
+  const totalSpend = valid.reduce((sum, r) => sum + (r.ship_cost ? parseCost(r.ship_cost) : 0), 0)
   const sorted = [...groups.entries()]
-    .map(([carrier, rs]) => ({ carrier, count: rs.length }))
+    .map(([carrier, rs]) => {
+      const spend = rs.reduce((sum, r) => sum + (r.ship_cost ? parseCost(r.ship_cost) : 0), 0)
+      return { carrier, count: rs.length, spend }
+    })
     .sort((a, b) => b.count - a.count)
 
   const top = sorted[0]
+  const topSpender = totalSpend > 0 ? [...sorted].sort((a, b) => b.spend - a.spend)[0] : null
+  const volumeVsSpendMismatch = topSpender && topSpender.carrier !== top.carrier
+
   const summary = sorted.length === 1
-    ? `All ${total} shipments went through ${top.carrier}.`
-    : `You've shipped with ${sorted.length} carriers. ${top.carrier} handles ${pct(top.count, total)} of your volume.`
+    ? `All ${total} shipments went through ${top.carrier}${totalSpend > 0 ? `, totaling ${currency(top.spend)}` : ''}.`
+    : volumeVsSpendMismatch
+    ? `You've shipped with ${sorted.length} carriers. ${top.carrier} handles the most volume (${pct(top.count, total)}), but ${topSpender!.carrier} is actually your biggest cost at ${currency(topSpender!.spend)}.`
+    : `You've shipped with ${sorted.length} carriers. ${top.carrier} handles ${pct(top.count, total)} of your volume${totalSpend > 0 ? ` and ${currency(top.spend)} in spend` : ''}.`
 
   return {
     outcomeId: 'carrier-performance',
     summary,
-    findings: sorted.map(({ carrier, count }) => ({
+    findings: sorted.map(({ carrier, count, spend }) => ({
       label: carrier,
-      value: `${count} shipments — ${pct(count, total)}`,
-      highlight: carrier === top.carrier,
+      value: totalSpend > 0
+        ? `${count} shipments — ${pct(count, total)} / ${currency(spend)} — ${pct(spend, totalSpend)} of spend`
+        : `${count} shipments — ${pct(count, total)}`,
+      highlight: carrier === top.carrier || carrier === topSpender?.carrier,
     })),
   }
 }
@@ -89,22 +100,45 @@ function analyzeDuplicateCharges(rows: Row[]): AnalysisResult {
     }
   }
 
-  const summary = `Found ${total} potential duplicate ${total === 1 ? 'charge' : 'charges'} — ${dupOrders.length} by order ID, ${dupTracking.length} by tracking number.`
+  // Estimate the disputable amount per group: total billed minus one "legitimate"
+  // charge (approximated as the group average) — i.e. the excess from being billed
+  // more than once for what should have been a single shipment.
+  function overcharge(rs: Row[]): number {
+    const costs = rs.filter(r => r.ship_cost).map(r => parseCost(r.ship_cost))
+    if (costs.length === 0) return 0
+    const total = costs.reduce((s, c) => s + c, 0)
+    const avg = total / costs.length
+    return Math.max(0, total - avg)
+  }
+
+  const totalAtRisk = dupOrders.reduce((s, [, rs]) => s + overcharge(rs), 0)
+    + dupTracking.reduce((s, [, rs]) => s + overcharge(rs), 0)
+
+  const summary = totalAtRisk > 0
+    ? `Found ${total} potential duplicate ${total === 1 ? 'charge' : 'charges'} — ${dupOrders.length} by order ID, ${dupTracking.length} by tracking number. Roughly ${currency(totalAtRisk)} in disputable overcharges.`
+    : `Found ${total} potential duplicate ${total === 1 ? 'charge' : 'charges'} — ${dupOrders.length} by order ID, ${dupTracking.length} by tracking number.`
 
   return {
     outcomeId: 'duplicate-charges',
     summary,
     findings: [
-      ...dupOrders.slice(0, 10).map(([id, rs]) => ({
-        label: `Order ${id}`,
-        value: `${rs.length} charges`,
-        highlight: true,
-      })),
-      ...dupTracking.slice(0, 10).map(([tn, rs]) => ({
-        label: `Tracking ${tn}`,
-        value: `${rs.length} shipments`,
-        highlight: true,
-      })),
+      ...(totalAtRisk > 0 ? [{ label: 'Estimated disputable total', value: currency(totalAtRisk), highlight: true }] : []),
+      ...dupOrders.slice(0, 10).map(([id, rs]) => {
+        const over = overcharge(rs)
+        return {
+          label: `Order ${id}`,
+          value: over > 0 ? `${rs.length} charges — ${currency(over)} likely excess` : `${rs.length} charges`,
+          highlight: true,
+        }
+      }),
+      ...dupTracking.slice(0, 10).map(([tn, rs]) => {
+        const over = overcharge(rs)
+        return {
+          label: `Tracking ${tn}`,
+          value: over > 0 ? `${rs.length} shipments — ${currency(over)} likely excess` : `${rs.length} shipments`,
+          highlight: true,
+        }
+      }),
     ],
   }
 }
@@ -124,20 +158,21 @@ function analyzeBudgetBreakdown(rows: Row[]): AnalysisResult {
     .map(([carrier, rs]) => ({
       carrier,
       total: rs.reduce((sum, r) => sum + parseCost(r.ship_cost), 0),
+      count: rs.length,
     }))
     .sort((a, b) => b.total - a.total)
 
   const top = carrierTotals[0]
-  const summary = `Total shipping spend: ${currency(totalSpend)}. ${top ? `${top.carrier} is your biggest cost at ${currency(top.total)}.` : ''}`
+  const summary = `Total shipping spend: ${currency(totalSpend)}. ${top ? `${top.carrier} is your biggest cost at ${currency(top.total)} across ${top.count} ${top.count === 1 ? 'package' : 'packages'}.` : ''}`
 
   return {
     outcomeId: 'budget-breakdown',
     summary,
     findings: [
-      { label: 'Total spend', value: currency(totalSpend), highlight: true },
-      ...carrierTotals.map(({ carrier, total }) => ({
+      { label: 'Total spend', value: `${currency(totalSpend)} — ${valid.length} ${valid.length === 1 ? 'package' : 'packages'}`, highlight: true },
+      ...carrierTotals.map(({ carrier, total, count }) => ({
         label: carrier,
-        value: `${currency(total)} — ${pct(total, totalSpend)}`,
+        value: `${currency(total)} — ${pct(total, totalSpend)} / ${count} ${count === 1 ? 'package' : 'packages'}`,
       })),
     ],
   }
@@ -300,7 +335,20 @@ function analyzeFulfillmentIntegrity(rows: Row[]): AnalysisResult {
     }
   }
 
+  // Which carrier the missing-tracking orders cluster around, if any — a single
+  // carrier standing out here usually means a process gap on their end, not yours.
+  const missingByCarrier = new Map<string, number>()
+  for (const r of missingTracking) {
+    const carrier = r.carrier?.trim() || 'Unknown'
+    missingByCarrier.set(carrier, (missingByCarrier.get(carrier) || 0) + 1)
+  }
+  const carrierBreakdown = [...missingByCarrier.entries()]
+    .sort((a, b) => b[1] - a[1])
+  const topCarrier = carrierBreakdown[0]
+  const carrierIsFocused = topCarrier && carrierBreakdown.length > 1 && topCarrier[1] / missingTracking.length >= 0.6
+
   const summary = `Found ${total} fulfillment ${total === 1 ? 'issue' : 'issues'} — ${missingTracking.length} orders missing tracking, ${multiOrder.length} tracking numbers linked to multiple orders.`
+    + (carrierIsFocused ? ` Missing tracking is concentrated on ${topCarrier[0]} (${topCarrier[1]} of ${missingTracking.length}).` : '')
 
   const findings: Finding[] = [
     missingTracking.length > 0
@@ -309,9 +357,16 @@ function analyzeFulfillmentIntegrity(rows: Row[]): AnalysisResult {
     multiOrder.length > 0
       ? { label: 'Tracking on multiple orders', value: String(multiOrder.length), highlight: true }
       : null,
+    ...(missingTracking.length > 0 && carrierBreakdown.length > 1
+      ? carrierBreakdown.map(([carrier, count]) => ({
+          label: `Missing tracking — ${carrier}`,
+          value: `${count} ${count === 1 ? 'order' : 'orders'}`,
+          highlight: carrier === topCarrier?.[0] && carrierIsFocused,
+        }))
+      : []),
     ...missingTracking.slice(0, 5).map(r => ({
       label: `Order ${r.order_id}`,
-      value: 'No tracking number',
+      value: r.carrier ? `No tracking number — ${r.carrier}` : 'No tracking number',
     })),
   ].filter((f): f is Finding => f !== null)
 
